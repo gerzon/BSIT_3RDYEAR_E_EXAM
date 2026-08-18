@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>3rd Year BSIT - Understanding-Type Examination</title>
+<style>
+  :root{
+    --sti-blue:#003b7a;
+    --sti-blue-dark:#002b5c;
+    --sti-yellow:#ffc400;
+    --light:#f4f7fb;
+    --text:#1f2937;
+    --border:#d9e1ec;
+    --success:#16803c;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0;
+    font-family:Arial,Helvetica,sans-serif;
+    background:var(--light);
+    color:var(--text);
+    line-height:1.5;
+  }
+  .topbar{height:9px;background:var(--sti-yellow)}
+  header{
+    background:linear-gradient(135deg,var(--sti-blue-dark),var(--sti-blue));
+    color:#fff;padding:28px 20px;
+    box-shadow:0 3px 12px rgba(0,0,0,.15);
+  }
+  .header-inner{max-width:1000px;margin:auto}
+  .brand{font-weight:800;letter-spacing:.5px;color:var(--sti-yellow);font-size:18px}
+  h1{margin:7px 0 4px;font-size:28px}
+  .subtitle{margin:0;color:#e9f1ff}
+  .container{max-width:1000px;margin:24px auto;padding:0 15px}
+  .card{
+    background:#fff;border:1px solid var(--border);border-radius:12px;
+    padding:22px;margin-bottom:18px;box-shadow:0 3px 12px rgba(0,0,0,.05)
+  }
+  .section-title{
+    background:var(--sti-blue);color:#fff;padding:12px 15px;border-radius:8px;
+    margin:-22px -22px 20px;font-size:18px;font-weight:700;
+    border-bottom:4px solid var(--sti-yellow)
+  }
+  .meta{display:grid;grid-template-columns:2fr 1fr 1fr;gap:14px}
+  label{font-weight:700;font-size:14px}
+  input[type=text], input[type=date], textarea{
+    width:100%;margin-top:6px;border:1px solid #bcc8d8;border-radius:7px;
+    padding:11px;font:inherit;background:#fff
+  }
+  .instructions{background:#fff8d9;border-left:5px solid var(--sti-yellow);padding:13px 15px;border-radius:6px}
+  .question{padding:18px 0;border-bottom:1px solid #e6ebf2}
+  .question:last-child{border-bottom:0}
+  .qtext{font-weight:700;margin-bottom:11px}
+  .option{
+    display:block;padding:9px 11px;margin:6px 0;border:1px solid transparent;
+    border-radius:7px;cursor:pointer
+  }
+  .option:hover{background:#eef5ff;border-color:#c7d9f2}
+  .option input{margin-right:9px}
+  .essay textarea{min-height:150px;resize:vertical}
+  .points{font-size:12px;color:#667085;font-weight:normal}
+  .actions{display:flex;gap:10px;flex-wrap:wrap}
+  button{
+    border:0;border-radius:8px;padding:13px 20px;font-weight:700;cursor:pointer;
+    font-size:15px
+  }
+  .submit{background:var(--sti-blue);color:#fff}
+  .reset{background:#e9eef5;color:#253247}
+  button:hover{opacity:.92}
+  #result{display:none}
+  .score{
+    font-size:30px;font-weight:800;color:var(--sti-blue);margin:5px 0
+  }
+  .success{color:var(--success);font-weight:700}
+  .warning{color:#8a5a00}
+  .review{margin-top:15px}
+  .wrong{background:#fff0f0;border-left:4px solid #c62828;padding:9px;margin:5px 0}
+  .correct{background:#eefaf1;border-left:4px solid var(--success);padding:9px;margin:5px 0}
+  footer{text-align:center;padding:25px;color:#667085;font-size:13px}
+  @media(max-width:700px){
+    .meta{grid-template-columns:1fr}
+    h1{font-size:22px}
+    .card{padding:16px}
+    .section-title{margin:-16px -16px 16px}
+  }
+  @media print{
+    .actions,#result{display:none!important}
+    body{background:#fff}
+    .card{box-shadow:none}
+  }
+</style>
+</head>
+<body>
+<div class="topbar"></div>
+<header>
+  <div class="header-inner">
+    <div class="brand">STI COLLEGE</div>
+    <h1>3rd Year BSIT – Understanding-Type Examination</h1>
+    <p class="subtitle">C# Collections, Generics, Delegates and Events</p>
+  </div>
+</header>
+
+<main class="container">
+  <form id="examForm">
+    <section class="card">
+      <div class="section-title">Student Information</div>
+      <div class="meta">
+        <div><label for="name">Name</label><input id="name" type="text" placeholder="Enter your full name" required></div>
+        <div><label for="section">Section</label><input id="section" type="text" placeholder="Section" required></div>
+        <div><label for="date">Date</label><input id="date" type="date" required></div>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="section-title">Instructions</div>
+      <div class="instructions">
+        <strong>Part I:</strong> Choose the best answer. 35 items × 2 points = 70 points.<br>
+        <strong>Part II:</strong> Answer clearly using appropriate C# terminology and examples. 6 items × 5 points = 30 points.<br>
+        <strong>Total:</strong> 100 points.
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="section-title">Part I – Multiple Choice <span class="points">(35 items × 2 points = 70 points)</span></div>
+      <div id="mcqContainer"></div>
+    </section>
+
+    <section class="card">
+      <div class="section-title">Part II – Essay <span class="points">(6 items × 5 points = 30 points)</span></div>
+      <div id="essayContainer"></div>
+      <p class="warning"><strong>Note:</strong> Essay responses are not automatically graded. The instructor should evaluate Part II manually.</p>
+    </section>
+
+    <section class="card">
+      <div class="actions">
+        <button class="submit" type="submit">Submit Examination</button>
+        <button class="reset" type="button" onclick="resetExam()">Reset Answers</button>
+      </div>
+    </section>
+  </form>
+
+  <section id="result" class="card">
+    <div class="section-title">Examination Result</div>
+    <div id="resultText"></div>
+    <div id="review" class="review"></div>
+  </section>
+</main>
+
+<footer>3rd Year BSIT • C# Collections, Generics, Delegates and Events</footer>
+
+<script>
+const questions = [
+["A programmer wants to store a collection of student names where the number of students may increase or decrease while the program is running. Which collection is most appropriate based on the handout?",["Array","ArrayList","Stack","Queue"],"B"],
+["A program stores Student ID → Student Name and retrieves a student's name by specifying the ID. Which collection is most suitable?",["Stack","Queue","Hashtable","ArrayList"],"C"],
+["A programmer needs a collection that stores key-value pairs while keeping the keys sorted. Which collection should be considered?",["SortedList","Stack","Queue","ArrayList"],"A"],
+["Stack<string> actions contains Open, Edit, Save in that order using Push(). Which item is returned first by Pop()?",["Open","Edit","Save","All three items"],"C"],
+["A browser history feature needs to process the most recently added item first. Which collection behavior fits?",["FIFO","LIFO","Sorted access","Key-value access"],"B"],
+["A customer-service system processes customers in the order they arrive. Which collection best represents this behavior?",["Stack","Queue","Hashtable","SortedList"],"B"],
+["Queue<int> numbers contains 10, 20, 30 in that order. What does Peek() return?",["10","20","30","Nothing"],"A"],
+["Queue<int> numbers contains 10, 20, 30. After int x = numbers.Dequeue(); what is x?",["10","20","30","0"],"A"],
+["A developer wants a collection that stores integers and prevents accidentally adding a string into the same collection. Which is most appropriate?",["ArrayList","Hashtable","List<int>","List<object>"],"C"],
+["Why are generic collections useful when developing applications?",["They eliminate variables.","They allow reusable code across different data types.","They automatically connect applications to databases.","They guarantee error-free programs."],"B"],
+["Which statement best describes List<T>?",["It is fixed-size.","It is dynamically allocated and can grow and shrink.","It only stores key-value pairs.","It always follows FIFO."],"B"],
+["List<string> names contains Anna, Ben, Carlo. Which accesses Ben?",["names[0]","names[1]","names[2]","names[\"Ben\"]"],"B"],
+["A list contains Anna, Ben, Carlo, Ben. After names.Remove(\"Ben\"), what happens?",["Both Ben entries are removed.","Only the first matching Ben is removed.","The entire list is removed.","Nothing is removed."],"B"],
+["A programmer wants to determine the position of Carlo in a List<string>. Which method is used?",["Sort()","Remove()","IndexOf()","ContainsValue()"],"C"],
+["If IndexOf() cannot find an element in a List<T>, what does it return?",["0","1","-1","null"],"C"],
+["A student wants to arrange the contents of a list into sorted order. Which method is used?",["Add()","Sort()","Remove()","IndexOf()"],"B"],
+["Which correctly compares Stack<T> and Queue<T>?",["Stack FIFO; Queue LIFO","Both FIFO","Stack LIFO; Queue FIFO","Both LIFO"],"C"],
+["Which operation adds an item to a Stack<T>?",["Enqueue","Dequeue","Push","Add"],"C"],
+["Which operation removes the item at the top of a Stack<T>?",["Pop","Peek","Push","Enqueue"],"A"],
+["What is the main difference between Peek() and Pop() on a stack?",["Peek removes; Pop adds.","Peek views without removing; Pop removes.","Both remove.","Both add."],"B"],
+["A developer wants a method reference that can point to another method when the signature matches. What C# feature should be used?",["Interface","Delegate","ArrayList","Hashtable"],"B"],
+["Which statement best describes a delegate?",["Stores only integers.","Encapsulates a method and holds a reference to a method.","Automatically creates a database connection.","Replaces every class."],"B"],
+["Given public delegate int MathOperation(int x, int y); which method could it reference?",["int Add(int x, int y)","void Add(int x, int y)","int Add(int x)","string Add(int x, int y)"],"A"],
+["Why must a referenced method have a matching signature?",["Delegate determines class name.","Delegate specifies expected return type and parameters.","Delegate changes parameters automatically.","Delegate only works with static methods."],"B"],
+["Which correctly creates a delegate referencing Formula.getSum?",["MathOperation op = new MathOperation(Formula.getSum);","MathOperation op = Formula.getSum();","MathOperation op = new Formula();","Formula op = MathOperation.getSum;"],"A"],
+["What is the main advantage of public delegate X DisplayOutput<X>(X arg)?",["Only integers.","It can reference methods using different data types while following the same pattern.","It removes methods.","It only references two-parameter methods."],"B"],
+["If X is double in DisplayOutput<double>, what method can it reference?",["A method returning double and receiving one double parameter","A method returning string and receiving one double parameter","A method returning double and receiving two int parameters","A void method with no parameters"],"A"],
+["Which best describes an event in C#?",["A collection that stores objects.","A class member fired when a specific action occurs.","Always a database operation.","A special array."],"B"],
+["A button click automatically runs a registered method. What concept is demonstrated?",["Event handling","Array indexing","Generic collection","Sorting"],"A"],
+["What is the role of an event handler?",["Stores objects.","The method invoked when an event occurs.","Creates a generic type.","Sorts an ArrayList."],"B"],
+["Before declaring an event, what should be declared first according to the handout?",["A queue","A delegate","An ArrayList","A constructor"],"B"],
+["An event uses a delegate that accepts two parameters. What should a registered method generally have?",["No parameters","One parameter","Two matching parameters","Three parameters"],"C"],
+["What is the purpose of eventName += delegateInstance;?",["Removes a subscription.","Registers/adds a delegate to the event.","Creates a class.","Sorts subscribers."],"B"],
+["Which accessors are involved in registering and unregistering event subscriptions?",["get and set","push and pop","add and remove","enqueue and dequeue"],"C"],
+["A programmer needs a mechanism that can reference methods from different classes as long as their signatures match. Which is the better fit?",["Delegate","ArrayList","Queue","SortedList"],"A"]
+];
+
+const essays = [
+["Collections in a Real-World System","Imagine that you are developing a school enrollment system. Explain which collection you would use for: a list of students, student ID and student name pairs, students waiting to be processed, and a collection where the most recently added item should be processed first. Explain why you selected each collection."],
+["List<T> vs. Array","Explain the difference between a traditional array and List<T> in terms of size and flexibility. Give one practical situation where List<T> would be more convenient than an array."],
+["Stack vs. Queue","Explain the difference between LIFO and FIFO. Give one real-world example for each and explain why the behavior of the collection fits the example."],
+["Understanding Delegates","In your own words, explain what a delegate is and why a programmer would use one instead of directly calling a method. Include a simple programming scenario where a delegate would be useful."],
+["Events and Event Handlers","Explain the relationship among a delegate, event, and event handler in C#. Describe what happens when an event occurs and a method has been registered to respond to it."],
+["Generics and Reusability","Explain why generics are useful in C#. Using List<T>, Queue<T>, or Stack<T> as an example, describe how generics make code more reusable and allow the programmer to work with different data types."]
+];
+
+function renderMCQ(){
+  const c=document.getElementById("mcqContainer");
+  c.innerHTML=questions.map((q,i)=>{
+    const n=i+1;
+    return `<div class="question">
+      <div class="qtext">${n}. ${q[0]}</div>
+      ${q[1].map((opt,j)=>{
+        const letter=String.fromCharCode(65+j);
+        return `<label class="option"><input type="radio" name="q${n}" value="${letter}"> <strong>${letter}.</strong> ${opt}</label>`;
+      }).join("")}
+    </div>`;
+  }).join("");
+}
+function renderEssays(){
+  const c=document.getElementById("essayContainer");
+  c.innerHTML=essays.map((e,i)=>`<div class="question essay">
+    <div class="qtext">${i+36}. ${e[0]} <span class="points">(5 points)</span></div>
+    <div>${e[1]}</div>
+    <textarea name="essay${i}" placeholder="Type your answer here..."></textarea>
+  </div>`).join("");
+}
+function grade(){
+  let correct=0, answered=0, review=[];
+  questions.forEach((q,i)=>{
+    const selected=document.querySelector(`input[name="q${i+1}"]:checked`);
+    if(selected){
+      answered++;
+      if(selected.value===q[2]) correct++;
+      else review.push({n:i+1,selected:selected.value,correct:q[2]});
+    }
+  });
+  const points=correct*2;
+  const essayAnswered=essays.filter((_,i)=>document.querySelector(`[name="essay${i}"]`).value.trim()).length;
+  document.getElementById("result").style.display="block";
+  document.getElementById("resultText").innerHTML=
+    `<div class="score">Part I: ${points} / 70</div>
+     <p><strong>Multiple-choice:</strong> ${correct} correct out of 35. ${answered} item(s) answered.</p>
+     <p><strong>Part II:</strong> ${essayAnswered} of 6 essay response(s) entered. These require instructor grading (5 points each).</p>
+     <p class="success">The final 100-point score should include the instructor's manually graded essay points.</p>`;
+  document.getElementById("review").innerHTML = review.length
+    ? `<h3>Items to Review</h3>${review.map(x=>`<div class="wrong">Item ${x.n}: your answer <strong>${x.selected}</strong> • correct answer <strong>${x.correct}</strong></div>`).join("")}`
+    : `<div class="correct">Excellent! All answered Part I items are correct.</div>`;
+  document.getElementById("result").scrollIntoView({behavior:"smooth"});
+}
+document.getElementById("examForm").addEventListener("submit",e=>{e.preventDefault();grade();});
+function resetExam(){
+  if(confirm("Reset all answers?")){
+    document.getElementById("examForm").reset();
+    document.getElementById("result").style.display="none";
+    window.scrollTo({top:0,behavior:"smooth"});
+  }
+}
+renderMCQ(); renderEssays();
+document.getElementById("date").valueAsDate=new Date();
+</script>
+</body>
+</html>
