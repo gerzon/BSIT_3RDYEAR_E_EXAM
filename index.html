@@ -103,7 +103,7 @@ const supabaseClient = window.supabase.createClient(
   .correct{background:#eefaf1;border-left:4px solid var(--success);padding:9px;margin:5px 0}
   .option.answer-correct{background:#eefaf1;border-color:var(--success)}
   .option.answer-wrong{background:#fff0f0;border-color:#c62828}
-  #loadingScreen{
+  .loadingScreen{
     position:fixed;inset:0;z-index:30;display:grid;place-items:center;
     padding:20px;background:var(--sti-blue-dark);color:#fff
   }
@@ -114,6 +114,7 @@ const supabaseClient = window.supabase.createClient(
   }
   .loading-dialog p{margin:0;font-weight:700}
   @keyframes spin{to{transform:rotate(360deg)}}
+  #submissionLoading{display:none;z-index:40}
   #welcomeScreen{
     position:fixed;inset:0;z-index:20;display:none;place-items:center;
     padding:20px;background:rgba(0,43,92,.92);color:#fff
@@ -147,6 +148,12 @@ const supabaseClient = window.supabase.createClient(
   <div class="loading-dialog">
     <div class="loading-spinner" aria-hidden="true"></div>
     <p>Loading examination...</p>
+  </div>
+</section>
+<section id="submissionLoading" class="loadingScreen" role="status" aria-live="polite">
+  <div class="loading-dialog">
+    <div class="loading-spinner" aria-hidden="true"></div>
+    <p>Submitting your examination...</p>
   </div>
 </section>
 <section id="welcomeScreen" role="dialog" aria-modal="true" aria-labelledby="welcomeTitle">
@@ -301,6 +308,8 @@ function shuffleQuestions(){
   }
 }
 async function grade(){
+  document.getElementById("submissionLoading").style.display="grid";
+  document.body.style.overflow="hidden";
   let correct=0, answered=0, review=[];
   questions.forEach((q,i)=>{
     const selected=document.querySelector(`input[name="q${i+1}"]:checked`);
@@ -317,18 +326,6 @@ async function grade(){
   });
   const points=correct*2;
   const essayAnswered=essays.filter((_,i)=>document.querySelector(`[name="essay${i}"]`).value.trim()).length;
-  document.getElementById("result").style.display="block";
-  document.body.style.overflow="hidden";
-  document.getElementById("resultText").innerHTML=
-    `<div class="score">Part I: ${points} / 70</div>
-     <p><strong>Multiple-choice:</strong> ${correct} correct out of 35. ${answered} item(s) answered.</p>
-     <p><strong>Part II:</strong> ${essayAnswered} of 6 essay response(s) entered. These require instructor grading (5 points each).</p>
-     <p class="success">The final 100-point score should include the instructor's manually graded essay points.</p>`;
-  document.getElementById("review").innerHTML = review.length
-    ? `<h3>Items to Review</h3>${review.map(x=>`<div class="wrong">Item ${x.n}: your answer <strong>${x.selected}</strong> • correct answer <strong>${x.correct}</strong></div>`).join("")}`
-    : `<div class="correct">Excellent! All answered Part I items are correct.</div>`;
-  document.querySelector(".result-close").focus();
-
   const { error } = await supabaseClient
   .from("exam_submissions")
   .insert({
@@ -342,6 +339,17 @@ async function grade(){
 if (error) {
   console.error("Could not save exam result:", error);
 }
+  document.getElementById("submissionLoading").style.display="none";
+  document.getElementById("result").style.display="block";
+  document.getElementById("resultText").innerHTML=
+    `<div class="score">Part I: ${points} / 70</div>
+     <p><strong>Multiple-choice:</strong> ${correct} correct out of 35. ${answered} item(s) answered.</p>
+     <p><strong>Part II:</strong> ${essayAnswered} of 6 essay response(s) entered. These require instructor grading (5 points each).</p>
+     <p class="success">The final 100-point score should include the instructor's manually graded essay points.</p>`;
+  document.getElementById("review").innerHTML = review.length
+    ? `<h3>Items to Review</h3>${review.map(x=>`<div class="wrong">Item ${x.n}: your answer <strong>${x.selected}</strong> • correct answer <strong>${x.correct}</strong></div>`).join("")}`
+    : `<div class="correct">Excellent! All answered Part I items are correct.</div>`;
+  document.querySelector(".result-close").focus();
 }
 document.getElementById("examForm").addEventListener("submit",e=>{e.preventDefault();grade();});
 function closeResult(){
