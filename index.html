@@ -4,6 +4,17 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>3rd Year BSIT - Understanding-Type Examination (FOR BATCH 2)</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2">
+const SUPABASE_URL = "https://oqwehqvhhdvxjxugdukh.supabase.co/rest/v1/";
+const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9xd2VocXZoaGR2eGp4dWdkdWtoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc2NTk3MzEsImV4cCI6MjEwMzIzNTczMX0.SidafkMBgTFj9wqqk8nuIYMNbfUpaYVa5WBJUvnYUl4";
+
+const supabaseClient = window.supabase.createClient(
+  SUPABASE_URL,
+  SUPABASE_KEY
+);
+
+</script>
+
 <style>
   :root{
     --sti-blue:#003b7a;
@@ -288,7 +299,7 @@ function shuffleQuestions(){
     [questions[i],questions[j]]=[questions[j],questions[i]];
   }
 }
-function grade(){
+async function grade(){
   let correct=0, answered=0, review=[];
   questions.forEach((q,i)=>{
     const selected=document.querySelector(`input[name="q${i+1}"]:checked`);
@@ -316,6 +327,20 @@ function grade(){
     ? `<h3>Items to Review</h3>${review.map(x=>`<div class="wrong">Item ${x.n}: your answer <strong>${x.selected}</strong> • correct answer <strong>${x.correct}</strong></div>`).join("")}`
     : `<div class="correct">Excellent! All answered Part I items are correct.</div>`;
   document.querySelector(".result-close").focus();
+
+  const { error } = await supabaseClient
+  .from("exam_submissions")
+  .insert({
+    student_name: document.getElementById("name").value.trim(),
+    section: document.getElementById("section").value.trim(),
+    exam_date: document.getElementById("date").value,
+    mcq_score: points,
+    essay_answered: essayAnswered
+  });
+
+if (error) {
+  console.error("Could not save exam result:", error);
+}
 }
 document.getElementById("examForm").addEventListener("submit",e=>{e.preventDefault();grade();});
 function closeResult(){
