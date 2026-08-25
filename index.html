@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>3rd Year BSIT - Understanding-Type Examination (BATCH 1)</title>
+<title>3rd Year BSIT - Understanding-Type Examination (FOR BATCH 2)</title>
 <style>
   :root{
     --sti-blue:#003b7a;
@@ -49,6 +49,10 @@
     padding:11px;font:inherit;background:#fff
   }
   .instructions{background:#fff8d9;border-left:5px solid var(--sti-yellow);padding:13px 15px;border-radius:6px}
+  .grading-scale{width:100%;margin-top:14px;border-collapse:collapse;background:#fff}
+  .grading-scale th,.grading-scale td{padding:9px 11px;border:1px solid #e2c75b;text-align:left}
+  .grading-scale th{background:var(--sti-blue);color:#fff}
+  .grading-scale tr:nth-child(even){background:#fffdf0}
   .question{padding:18px 0;border-bottom:1px solid #e6ebf2}
   .question:last-child{border-bottom:0}
   .qtext{font-weight:700;margin-bottom:11px}
@@ -68,7 +72,15 @@
   .submit{background:var(--sti-blue);color:#fff}
   .reset{background:#e9eef5;color:#253247}
   button:hover{opacity:.92}
-  #result{display:none}
+  #result{
+    display:none;position:fixed;inset:0;z-index:10;overflow-y:auto;
+    margin:0;padding:28px 15px;background:rgba(0,43,92,.55)
+  }
+  .result-dialog{
+    max-width:1000px;margin:auto;background:#fff;border:1px solid var(--border);
+    border-radius:12px;padding:22px;box-shadow:0 12px 35px rgba(0,0,0,.25)
+  }
+  .result-close{float:right;background:#e9eef5;color:#253247;padding:8px 13px}
   .score{
     font-size:30px;font-weight:800;color:var(--sti-blue);margin:5px 0
   }
@@ -77,6 +89,32 @@
   .review{margin-top:15px}
   .wrong{background:#fff0f0;border-left:4px solid #c62828;padding:9px;margin:5px 0}
   .correct{background:#eefaf1;border-left:4px solid var(--success);padding:9px;margin:5px 0}
+  .option.answer-correct{background:#eefaf1;border-color:var(--success)}
+  .option.answer-wrong{background:#fff0f0;border-color:#c62828}
+  #loadingScreen{
+    position:fixed;inset:0;z-index:30;display:grid;place-items:center;
+    padding:20px;background:var(--sti-blue-dark);color:#fff
+  }
+  .loading-dialog{text-align:center}
+  .loading-spinner{
+    width:76px;height:76px;margin:0 auto 18px;border:8px solid rgba(255,255,255,.28);
+    border-top-color:var(--sti-yellow);border-radius:50%;animation:spin 1s linear infinite
+  }
+  .loading-dialog p{margin:0;font-weight:700}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  #welcomeScreen{
+    position:fixed;inset:0;z-index:20;display:none;place-items:center;
+    padding:20px;background:rgba(0,43,92,.92);color:#fff
+  }
+  .welcome-dialog{
+    width:min(560px,100%);text-align:center;background:#fff;color:var(--text);
+    border-top:7px solid var(--sti-yellow);border-radius:12px;padding:34px 28px;
+    box-shadow:0 12px 35px rgba(0,0,0,.28)
+  }
+  .welcome-dialog h2{margin:0 0 8px;color:var(--sti-blue);font-size:27px}
+  .welcome-dialog p{margin:8px 0 22px}
+  .welcome-dialog button{background:var(--sti-blue);color:#fff}
+  .loading-message{color:#667085;font-size:14px}
   footer{text-align:center;padding:25px;color:#667085;font-size:13px}
   @media(max-width:700px){
     .meta{grid-template-columns:1fr}
@@ -93,10 +131,23 @@
 </head>
 <body>
 <div class="topbar"></div>
+<section id="loadingScreen" role="status" aria-live="polite">
+  <div class="loading-dialog">
+    <div class="loading-spinner" aria-hidden="true"></div>
+    <p>Loading examination...</p>
+  </div>
+</section>
+<section id="welcomeScreen" role="dialog" aria-modal="true" aria-labelledby="welcomeTitle">
+  <div class="welcome-dialog">
+    <h2 id="welcomeTitle">Welcome to the Examination</h2>
+    <p class="loading-message" id="loadingMessage">Preparing your randomized multiple-choice questions...</p>
+    <button id="startExam" type="button" disabled>Loading...</button>
+  </div>
+</section>
 <header>
   <div class="header-inner">
     <div class="brand">STI COLLEGE</div>
-    <h1>3rd Year BSIT – Understanding-Type Examination (BATCH 1)</h1>
+    <h1>3rd Year BSIT – Understanding-Type Examination (FOR BATCH 2)</h1>
     <p class="subtitle">C# Collections, Generics, Delegates and Events</p>
   </div>
 </header>
@@ -118,6 +169,16 @@
         <strong>Part I:</strong> Choose the best answer. 35 items × 2 points = 70 points.<br>
         <strong>Part II:</strong> Answer clearly using appropriate C# terminology and examples. 6 items × 5 points = 30 points.<br>
         <strong>Total:</strong> 100 points.
+        <table class="grading-scale" aria-label="Personal grading scale">
+          <thead>
+            <tr><th>Score</th><th>Recording</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>90 - 100</td><td>Will be recorded as 100 points</td></tr>
+            <tr><td>70 - 89</td><td>Actual score</td></tr>
+            <tr><td>69 &amp; below</td><td>Will be recorded as zero points</td></tr>
+          </tbody>
+        </table>
       </div>
     </section>
 
@@ -140,10 +201,13 @@
     </section>
   </form>
 
-  <section id="result" class="card">
-    <div class="section-title">Examination Result</div>
-    <div id="resultText"></div>
-    <div id="review" class="review"></div>
+  <section id="result" role="dialog" aria-modal="true" aria-labelledby="resultTitle">
+    <div class="result-dialog">
+      <button class="result-close" type="button" onclick="closeResult()" aria-label="Close examination result">Close</button>
+      <div id="resultTitle" class="section-title">Examination Result</div>
+      <div id="resultText"></div>
+      <div id="review" class="review"></div>
+    </div>
   </section>
 </main>
 
@@ -159,7 +223,7 @@ const questions = [
 ["A customer-service system processes customers in the order they arrive. Which collection best represents this behavior?",["Stack","Queue","Hashtable","SortedList"],"B"],
 ["Queue<int> numbers contains 10, 20, 30 in that order. What does Peek() return?",["10","20","30","Nothing"],"A"],
 ["Queue<int> numbers contains 10, 20, 30. After int x = numbers.Dequeue(); what is x?",["10","20","30","0"],"A"],
-["A developer wants a collection that stores integers and prevents accidentally adding a string into the same collection. Which is most appropriate?",["ArrayList","Hashtable","List<int>","List<object>"],"C"],
+["A developer wants a collection that stores integers and prevents accidentally adding a string into the same collection. Which is most appropriate?",["ArrayList","Hashtable","List ","List<objack>"],"C"],
 ["Why are generic collections useful when developing applications?",["They eliminate variables.","They allow reusable code across different data types.","They automatically connect applications to databases.","They guarantee error-free programs."],"B"],
 ["Which statement best describes List<T>?",["It is fixed-size.","It is dynamically allocated and can grow and shrink.","It only stores key-value pairs.","It always follows FIFO."],"B"],
 ["List<string> names contains Anna, Ben, Carlo. Which accesses Ben?",["names[0]","names[1]","names[2]","names[\"Ben\"]"],"B"],
@@ -218,10 +282,21 @@ function renderEssays(){
     <textarea name="essay${i}" placeholder="Type your answer here..."></textarea>
   </div>`).join("");
 }
+function shuffleQuestions(){
+  for(let i=questions.length-1;i>0;i--){
+    const j=Math.floor(Math.random()*(i+1));
+    [questions[i],questions[j]]=[questions[j],questions[i]];
+  }
+}
 function grade(){
   let correct=0, answered=0, review=[];
   questions.forEach((q,i)=>{
     const selected=document.querySelector(`input[name="q${i+1}"]:checked`);
+    document.querySelectorAll(`input[name="q${i+1}"]`).forEach(input=>{
+      const option=input.closest(".option");
+      option.classList.toggle("answer-correct",input.value===q[2]);
+      option.classList.toggle("answer-wrong",Boolean(selected)&&input===selected&&input.value!==q[2]);
+    });
     if(selected){
       answered++;
       if(selected.value===q[2]) correct++;
@@ -231,6 +306,7 @@ function grade(){
   const points=correct*2;
   const essayAnswered=essays.filter((_,i)=>document.querySelector(`[name="essay${i}"]`).value.trim()).length;
   document.getElementById("result").style.display="block";
+  document.body.style.overflow="hidden";
   document.getElementById("resultText").innerHTML=
     `<div class="score">Part I: ${points} / 70</div>
      <p><strong>Multiple-choice:</strong> ${correct} correct out of 35. ${answered} item(s) answered.</p>
@@ -239,18 +315,43 @@ function grade(){
   document.getElementById("review").innerHTML = review.length
     ? `<h3>Items to Review</h3>${review.map(x=>`<div class="wrong">Item ${x.n}: your answer <strong>${x.selected}</strong> • correct answer <strong>${x.correct}</strong></div>`).join("")}`
     : `<div class="correct">Excellent! All answered Part I items are correct.</div>`;
-  document.getElementById("result").scrollIntoView({behavior:"smooth"});
+  document.querySelector(".result-close").focus();
 }
 document.getElementById("examForm").addEventListener("submit",e=>{e.preventDefault();grade();});
+function closeResult(){
+  document.getElementById("result").style.display="none";
+  document.body.style.overflow="";
+}
 function resetExam(){
   if(confirm("Reset all answers?")){
     document.getElementById("examForm").reset();
-    document.getElementById("result").style.display="none";
+    closeResult();
     window.scrollTo({top:0,behavior:"smooth"});
   }
 }
-renderMCQ(); renderEssays();
-document.getElementById("date").valueAsDate=new Date();
+function prepareExam(){
+  shuffleQuestions();
+  renderMCQ();
+  renderEssays();
+  document.getElementById("date").valueAsDate=new Date();
+  document.getElementById("loadingMessage").textContent="Your questions are ready. Good luck!";
+  const startButton=document.getElementById("startExam");
+  startButton.disabled=false;
+  startButton.textContent="Start Examination";
+  setTimeout(()=>{
+    document.getElementById("loadingScreen").style.display="none";
+    document.getElementById("welcomeScreen").style.display="grid";
+    startButton.focus();
+  },800);
+}
+function startExam(){
+  document.getElementById("welcomeScreen").style.display="none";
+  document.body.style.overflow="";
+  document.getElementById("name").focus();
+}
+document.getElementById("startExam").addEventListener("click",startExam);
+document.body.style.overflow="hidden";
+window.addEventListener("load",prepareExam,{once:true});
 </script>
 </body>
 </html>
