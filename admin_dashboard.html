@@ -36,12 +36,18 @@
 	.table-wrap{overflow-x:auto}table{width:100%;border-collapse:collapse;min-width:720px}th,td{padding:14px 20px;text-align:left;border-bottom:1px solid #e9eef5}th{background:#f8fafc;color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.35px}tbody tr:hover{background:#fbfdff}.student{font-weight:700;color:var(--sti-blue)}.score{font-weight:800}.score.good{color:var(--green)}.score.low{color:var(--red)}.essay{color:var(--muted)}
 	.empty,.error{padding:42px 20px;text-align:center;color:var(--muted)}.error{color:var(--red);display:none}
 	.status{margin:0 0 14px;color:var(--muted);font-size:13px}.status.error-text{color:var(--red)}
+	#loginScreen{position:fixed;inset:0;z-index:10;display:grid;place-items:center;padding:20px;background:rgba(0,43,92,.94)}
+	.login-card{width:min(420px,100%);background:#fff;border-top:7px solid var(--sti-yellow);border-radius:9px;padding:28px;box-shadow:0 12px 35px rgba(0,0,0,.28)}
+	.login-card h2{color:var(--sti-blue);margin:0 0 7px}.login-card p{color:var(--muted);margin:0 0 20px}.login-card button{width:100%;margin-top:14px}.login-error{display:none;color:var(--red);font-size:13px;margin:10px 0 0!important}
 	@media(max-width:780px){header{padding:24px 20px 28px}h1{font-size:24px}.toolbar{align-items:start;flex-direction:column}.stats{grid-template-columns:repeat(2,1fr)}.filters{grid-template-columns:1fr 1fr}.filters>div:first-child{grid-column:1/-1}.filter-button{grid-column:1/-1}}
 	@media(max-width:460px){.container{padding:22px 13px 35px}.stats{gap:9px}.stat{padding:13px}.stat-value{font-size:23px}.panel-head{align-items:start;flex-direction:column}.filters{padding:13px}.actions{width:100%}.actions button{flex:1}}
 </style>
 </head>
 <body>
 <div class="topbar"></div>
+<section id="loginScreen" role="dialog" aria-modal="true" aria-labelledby="loginTitle">
+	<div class="login-card"><div class="brand" style="color:var(--sti-blue)">STI COLLEGE</div><h2 id="loginTitle">Dashboard access</h2><p>Enter the administrator password to view exam submissions.</p><form id="loginForm"><label for="passwordInput">Password</label><input id="passwordInput" type="password" autocomplete="current-password" required><button class="primary" type="submit">Unlock dashboard</button><p class="login-error" id="loginError">Incorrect password. Please try again.</p></form></div>
+</section>
 <header><div class="header-inner"><div class="brand">STI COLLEGE</div><h1>Examination Dashboard</h1><p class="subtitle">ICT / IT Department</p></div></header>
 <main class="container">
 	<div class="toolbar">
@@ -71,6 +77,7 @@
 const SUPABASE_URL="https://oqwehqvhhdvxjxugdukh.supabase.co";
 const SUPABASE_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9xd2VocXZoaGR2eGp4dWdkdWtoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc2NTk3MzEsImV4cCI6MjEwMzIzNTczMX0.SidafkMBgTFj9wqqk8nuIYMNbfUpaYVa5WBJUvnYUl4";
 const supabaseClient=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
+const DASHBOARD_PASSWORD="STIadmin123";
 let submissions=[];
 const byId=id=>document.getElementById(id);
 function formatDate(value){if(!value)return "-";return new Date(`${value}T00:00:00`).toLocaleDateString(undefined,{year:"numeric",month:"short",day:"numeric"})}
@@ -80,7 +87,8 @@ function escapeHtml(value){return String(value).replace(/[&<>"']/g,char=>({"&":"
 function updateStats(){const scores=submissions.map(row=>Number(row.mcq_score)||0);byId("totalStat").textContent=submissions.length;byId("averageStat").textContent=scores.length?`${(scores.reduce((sum,score)=>sum+score,0)/scores.length).toFixed(1)} / 70`:"-";byId("highestStat").textContent=scores.length?`${Math.max(...scores)} / 70`:"-";byId("essayStat").textContent=submissions.filter(row=>(Number(row.essay_answered)||0)>0).length}
 async function loadSubmissions(){byId("status").textContent="Loading submitted examinations...";byId("errorState").style.display="none";const {data,error}=await supabaseClient.from("exam_submissions").select("student_name,section,exam_date,mcq_score,essay_answered").order("exam_date",{ascending:false});if(error){console.error(error);byId("status").textContent="Could not connect to submitted examinations.";byId("status").classList.add("error-text");byId("errorState").style.display="block";return}submissions=data||[];byId("status").classList.remove("error-text");byId("status").textContent=`Last updated ${new Date().toLocaleTimeString([], {hour:"numeric",minute:"2-digit"})}`;const sections=[...new Set(submissions.map(row=>row.section).filter(Boolean))].sort();byId("sectionFilter").innerHTML='<option value="">All sections</option>'+sections.map(section=>`<option value="${escapeHtml(section)}">${escapeHtml(section)}</option>`).join("");updateStats();render()}
 function downloadCsv(){const rows=filteredRows();const header=["Student","Section","Exam date","Part I score","Essays entered"],body=rows.map(row=>[row.student_name,row.section,row.exam_date,row.mcq_score,row.essay_answered]);const csv=[header,...body].map(row=>row.map(value=>`"${String(value??"").replace(/"/g,'""')}"`).join(",")).join("\n"),blob=new Blob([csv],{type:"text/csv;charset=utf-8"}),link=document.createElement("a");link.href=URL.createObjectURL(blob);link.download="sti-exam-submissions.csv";link.click();URL.revokeObjectURL(link.href)}
-byId("refreshButton").addEventListener("click",loadSubmissions);byId("exportButton").addEventListener("click",downloadCsv);byId("clearButton").addEventListener("click",()=>{byId("searchInput").value="";byId("sectionFilter").value="";byId("dateFilter").value="";render()});["searchInput","sectionFilter","dateFilter"].forEach(id=>byId(id).addEventListener("input",render));loadSubmissions();
+byId("refreshButton").addEventListener("click",loadSubmissions);byId("exportButton").addEventListener("click",downloadCsv);byId("clearButton").addEventListener("click",()=>{byId("searchInput").value="";byId("sectionFilter").value="";byId("dateFilter").value="";render()});["searchInput","sectionFilter","dateFilter"].forEach(id=>byId(id).addEventListener("input",render));
+byId("loginForm").addEventListener("submit",event=>{event.preventDefault();if(byId("passwordInput").value===DASHBOARD_PASSWORD){byId("loginScreen").style.display="none";loadSubmissions();}else{byId("loginError").style.display="block";byId("passwordInput").select()}});byId("passwordInput").focus();
 </script>
 </body>
 </html>

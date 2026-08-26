@@ -41,7 +41,10 @@ const supabaseClient = window.supabase.createClient(
     box-shadow:0 3px 12px rgba(0,0,0,.15);
   }
   .header-inner{max-width:1000px;margin:auto}
+  .header-row{display:flex;align-items:center;justify-content:space-between;gap:16px}
   .brand{font-weight:800;letter-spacing:.5px;color:var(--sti-yellow);font-size:18px}
+  .dashboard-link{display:inline-block;background:var(--sti-yellow);color:var(--sti-blue-dark);padding:9px 13px;border-radius:7px;font-size:13px;font-weight:700;text-decoration:none}
+  .dashboard-link:hover{filter:brightness(.95)}
   h1{margin:7px 0 4px;font-size:28px}
   .subtitle{margin:0;color:#e9f1ff}
   .container{max-width:1000px;margin:24px auto;padding:0 15px}
@@ -130,6 +133,7 @@ const supabaseClient = window.supabase.createClient(
   .loading-message{color:#667085;font-size:14px}
   footer{text-align:center;padding:25px;color:#667085;font-size:13px}
   @media(max-width:700px){
+    .header-row{align-items:flex-start;flex-direction:column;gap:10px}
     .meta{grid-template-columns:1fr}
     h1{font-size:22px}
     .card{padding:16px}
@@ -165,7 +169,7 @@ const supabaseClient = window.supabase.createClient(
 </section>
 <header>
   <div class="header-inner">
-    <div class="brand">STI COLLEGE</div>
+    <div class="header-row"><div class="brand">STI COLLEGE</div><a class="dashboard-link" href="admin_dashboard.html">Admin Dashboard</a></div>
     <h1>3rd Year BSIT – Understanding-Type Examination</h1>
     <p class="subtitle">C# Collections, Generics, Delegates and Events</p>
   </div>
