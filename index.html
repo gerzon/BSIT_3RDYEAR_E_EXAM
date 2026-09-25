@@ -3,9 +3,10 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>3rd Year BSIT - Understanding-Type Examination (FOR BATCH 2)</title>
+<title>BSIT 3101 Online Examination</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
+// Supabase connection settings used to save completed examination results.
 const SUPABASE_URL = "https://oqwehqvhhdvxjxugdukh.supabase.co";
 const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9xd2VocXZoaGR2eGp4dWdkdWtoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc2NTk3MzEsImV4cCI6MjEwMzIzNTczMX0.SidafkMBgTFj9wqqk8nuIYMNbfUpaYVa5WBJUvnYUl4";
 
@@ -17,6 +18,7 @@ const supabaseClient = window.supabase.createClient(
 </script>
 
 <style>
+  /* Theme colors and reusable page values. */
   :root{
     --sti-blue:#003b7a;
     --sti-blue-dark:#002b5c;
@@ -48,6 +50,19 @@ const supabaseClient = window.supabase.createClient(
   h1{margin:7px 0 4px;font-size:28px}
   .subtitle{margin:0;color:#e9f1ff}
   .container{max-width:1000px;margin:24px auto;padding:0 15px}
+  .subject-tabs{
+    max-width:1000px;margin:22px auto 0;padding:0 15px;display:flex;gap:10px;flex-wrap:wrap
+  }
+  .tab-button{
+    flex:1 1 180px;border:1px solid var(--border);background:#fff;color:var(--sti-blue-dark);
+    border-radius:10px 10px 0 0;padding:12px 18px;font-weight:700;cursor:pointer;
+    box-shadow:0 -2px 8px rgba(0,0,0,.03)
+  }
+  .tab-button.active{
+    background:var(--sti-blue);color:#fff;border-color:var(--sti-blue);box-shadow:none
+  }
+  .tab-panel{display:none}
+  .tab-panel.active{display:block}
   .card{
     background:#fff;border:1px solid var(--border);border-radius:12px;
     padding:22px;margin-bottom:18px;box-shadow:0 3px 12px rgba(0,0,0,.05)
@@ -68,8 +83,34 @@ const supabaseClient = window.supabase.createClient(
   .grading-scale th,.grading-scale td{padding:9px 11px;border:1px solid #e2c75b;text-align:left}
   .grading-scale th{background:var(--sti-blue);color:#fff}
   .grading-scale tr:nth-child(even){background:#fffdf0}
+  /* Question and answer option styles. */
   .question{padding:18px 0;border-bottom:1px solid #e6ebf2}
   .question:last-child{border-bottom:0}
+  .question-modal{
+    display:none;position:fixed;inset:0;z-index:15;overflow-y:auto;
+    padding:28px 15px;background:rgba(0,43,92,.72)
+  }
+  .question-modal.open{display:block}
+  .question-dialog{
+    width:min(700px,100%);min-height:360px;margin:0 auto;background:#fff;
+    border:1px solid var(--border);border-radius:12px;padding:22px;
+    box-shadow:0 12px 35px rgba(0,0,0,.3)
+  }
+  .question-dialog-header{
+    display:flex;align-items:center;justify-content:space-between;gap:12px;
+    margin:-22px -22px 15px;padding:14px 18px;background:var(--sti-blue);
+    color:#fff;border-radius:12px 12px 0 0;border-bottom:4px solid var(--sti-yellow)
+  }
+  .question-progress{font-size:14px;font-weight:700}
+  .question-close{background:#e9eef5;color:#253247;padding:8px 13px;font-size:13px}
+  .question-dialog .question{display:block;border:0;padding:12px 0 20px}
+  .question-dialog .question[hidden]{display:none}
+  .question-navigation{display:flex;justify-content:space-between;gap:10px;border-top:1px solid var(--border);padding-top:16px}
+  .question-navigation button{background:var(--sti-blue);color:#fff}
+  .question-navigation .previous{background:#e9eef5;color:#253247}
+  .question-launch{display:flex;align-items:center;justify-content:space-between;gap:14px}
+  .question-launch p{margin:0;color:#667085}
+  .open-questions{background:var(--sti-blue);color:#fff}
   .qtext{font-weight:700;margin-bottom:11px}
   .option{
     display:block;padding:9px 11px;margin:6px 0;border:1px solid transparent;
@@ -77,6 +118,7 @@ const supabaseClient = window.supabase.createClient(
   }
   .option:hover{background:#eef5ff;border-color:#c7d9f2}
   .option input{margin-right:9px}
+  /* Form controls and examination actions. */
   .essay textarea{min-height:150px;resize:vertical}
   .points{font-size:12px;color:#667085;font-weight:normal}
   .actions{display:flex;gap:10px;flex-wrap:wrap}
@@ -87,6 +129,7 @@ const supabaseClient = window.supabase.createClient(
   .submit{background:var(--sti-blue);color:#fff}
   .reset{background:#e9eef5;color:#253247}
   button:hover{opacity:.92}
+  /* Result dialog and answer review styles. */
   #result{
     display:none;position:fixed;inset:0;z-index:10;overflow-y:auto;
     margin:0;padding:28px 15px;background:rgba(0,43,92,.55)
@@ -106,6 +149,7 @@ const supabaseClient = window.supabase.createClient(
   .correct{background:#eefaf1;border-left:4px solid var(--success);padding:9px;margin:5px 0}
   .option.answer-correct{background:#eefaf1;border-color:var(--success)}
   .option.answer-wrong{background:#fff0f0;border-color:#c62828}
+  /* Loading, welcome, fullscreen, and page-leave overlays. */
   .loadingScreen{
     position:fixed;inset:0;z-index:30;display:grid;place-items:center;
     padding:20px;background:var(--sti-blue-dark);color:#fff
@@ -122,6 +166,14 @@ const supabaseClient = window.supabase.createClient(
     position:fixed;inset:0;z-index:20;display:none;place-items:center;
     padding:20px;background:rgba(0,43,92,.92);color:#fff
   }
+  #fullscreenScreen{
+    position:fixed;inset:0;z-index:50;display:none;place-items:center;
+    padding:20px;background:rgba(0,43,92,.96);color:#fff
+  }
+  #pageLeaveScreen{
+    position:fixed;inset:0;z-index:60;display:none;place-items:center;
+    padding:20px;background:rgba(0,43,92,.98);color:#fff
+  }
   .welcome-dialog{
     width:min(560px,100%);text-align:center;background:#fff;color:var(--text);
     border-top:7px solid var(--sti-yellow);border-radius:12px;padding:34px 28px;
@@ -132,6 +184,7 @@ const supabaseClient = window.supabase.createClient(
   .welcome-dialog button{background:var(--sti-blue);color:#fff}
   .loading-message{color:#667085;font-size:14px}
   footer{text-align:center;padding:25px;color:#667085;font-size:13px}
+  /* Responsive layout adjustments for small screens. */
   @media(max-width:700px){
     .header-row{align-items:flex-start;flex-direction:column;gap:10px}
     .meta{grid-template-columns:1fr}
@@ -139,6 +192,7 @@ const supabaseClient = window.supabase.createClient(
     .card{padding:16px}
     .section-title{margin:-16px -16px 16px}
   }
+  /* Hide interactive controls when printing results. */
   @media print{
     .actions,#result{display:none!important}
     body{background:#fff}
@@ -148,18 +202,21 @@ const supabaseClient = window.supabase.createClient(
 </head>
 <body>
 <div class="topbar"></div>
+<!-- Initial loading state while questions are prepared. -->
 <section id="loadingScreen" class="loadingScreen" role="status" aria-live="polite">
   <div class="loading-dialog">
     <div class="loading-spinner" aria-hidden="true"></div>
     <p>Loading examination...</p>
   </div>
 </section>
+<!-- Loading state shown while the examination is being submitted. -->
 <section id="submissionLoading" class="loadingScreen" role="status" aria-live="polite">
   <div class="loading-dialog">
     <div class="loading-spinner" aria-hidden="true"></div>
     <p>Submitting your examination...</p>
   </div>
 </section>
+<!-- Welcome dialog used to start the examination. -->
 <section id="welcomeScreen" role="dialog" aria-modal="true" aria-labelledby="welcomeTitle">
   <div class="welcome-dialog">
     <h2 id="welcomeTitle">Welcome to the Examination</h2>
@@ -167,150 +224,399 @@ const supabaseClient = window.supabase.createClient(
     <button id="startExam" type="button" disabled>Loading...</button>
   </div>
 </section>
+<!-- Fullscreen warning shown on supported non-iPhone devices. -->
+<section id="fullscreenScreen" role="dialog" aria-modal="true" aria-labelledby="fullscreenTitle">
+  <div class="welcome-dialog">
+    <h2 id="fullscreenTitle">Fullscreen Required</h2>
+    <p class="loading-message">The examination is paused because fullscreen mode was exited. Return to fullscreen to continue.</p>
+    <button id="returnFullscreen" type="button">Return to Fullscreen</button>
+  </div>
+</section>
+<!-- Page-leave warning shown when the active examination loses focus. -->
+<section id="pageLeaveScreen" role="dialog" aria-modal="true" aria-labelledby="pageLeaveTitle">
+  <div class="welcome-dialog">
+    <h2 id="pageLeaveTitle">Examination Paused</h2>
+    <p class="loading-message">You left the examination page or minimized the window. Return to this page and fullscreen mode to continue.</p>
+    <button id="returnPage" type="button">Return to Examination</button>
+  </div>
+</section>
+<!-- Site header and administrator navigation. -->
 <header>
   <div class="header-inner">
     <div class="header-row"><div class="brand">STI COLLEGE</div><a class="dashboard-link" href="admin_dashboard.html">Admin Dashboard</a></div>
-    <h1>3rd Year BSIT – Understanding-Type Examination</h1>
-    <p class="subtitle">C# Collections, Generics, Delegates and Events</p>
+    <h1>BSIT 3101 Online Examination</h1>
+    <p class="subtitle">Event Driven Programming: Exception Handling and Threads</p>
   </div>
 </header>
 
+<!-- Subject tabs switch between the BSIT 3101 and Mathematics examinations. -->
+<div class="subject-tabs" role="tablist" aria-label="Examination subjects">
+  <button class="tab-button active" type="button" data-tab="ict" role="tab" aria-selected="true" aria-controls="ict-panel" id="tab-ict">BSIT 3101</button>
+  <button class="tab-button" type="button" data-tab="math" role="tab" aria-selected="false" aria-controls="math-panel" id="tab-math">General Mathematics</button>
+</div>
+
+<!-- Main examination content. -->
 <main class="container">
-  <form id="examForm">
-    <section class="card">
-      <div class="section-title">Student Information</div>
-      <div class="meta">
-        <div><label for="name">Name</label><input id="name" type="text" placeholder="Enter your full name" required></div>
-        <div><label for="section">Section</label><input id="section" type="text" placeholder="Section" value="BSIT 3101" disabled></div>
-        <div><label for="date">Date</label><input id="date" type="date" required></div>
+  <div id="ict-panel" class="tab-panel active" role="tabpanel" aria-labelledby="tab-ict">
+    <form id="examForm">
+      <!-- BSIT 3101 student information fields. -->
+      <section class="card">
+        <div class="section-title">Student Information</div>
+        <div class="meta">
+          <div><label for="name">Name</label><input id="name" type="text" placeholder="Enter your full name" required></div>
+          <div><label for="section">Section</label><input id="section" type="text" placeholder="Section" value="BSIT 3101" disabled></div>
+          <div><label for="date">Date</label><input id="date" type="date" required></div>
+        </div>
+      </section>
+
+      <!-- BSIT 3101 examination instructions and grading scale. -->
+      <section class="card">
+        <div class="section-title">Instructions</div>
+        <div class="instructions">
+          <strong>Multiple Choice:</strong> Choose the best answer. 50 items × 2 points = 100 points.<br>
+          <strong>Total:</strong> 100 points.
+          <table class="grading-scale" aria-label="Personal grading scale">
+            <thead>
+              <tr><th>Score</th><th>Recording</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>90 - 100</td><td>Will be recorded as 100 points</td></tr>
+              <tr><td>75 - 89</td><td>Actual score</td></tr>
+              <tr><td>74 &amp; below</td><td>Will be recorded as zero points</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- BSIT 3101 question launcher. Individual questions render in the modal below. -->
+      <section class="card">
+        <div class="section-title">Multiple Choice <span class="points">(50 items × 2 points = 100 points)</span></div>
+        <div class="question-launch">
+          <p>Answer each question in the examination window.</p>
+          <button id="openIctQuestions" class="open-questions" type="button">Open Questions</button>
+        </div>
+      </section>
+
+      <!-- BSIT 3101 submission and reset actions. -->
+      <section class="card">
+        <div class="actions">
+          <button id="submitButton" class="submit" type="submit">Submit Examination</button>
+          <button class="reset" type="button" onclick="resetExam()">Reset Answers</button>
+        </div>
+      </section>
+
+    <!-- BSIT 3101 one-question-at-a-time modal. -->
+    <section id="ictQuestionModal" class="question-modal" role="dialog" aria-modal="true" aria-labelledby="ictQuestionModalTitle">
+      <div class="question-dialog">
+        <div class="question-dialog-header">
+          <strong id="ictQuestionModalTitle">BSIT 3101 Question</strong>
+          <span id="ictQuestionProgress" class="question-progress"></span>
+          <button class="question-close" type="button" data-close-question-modal="ictQuestionModal">Back to Exam</button>
+        </div>
+        <div id="mcqContainer"></div>
+        <div class="question-navigation">
+          <button id="ictPreviousQuestion" class="previous" type="button">Previous</button>
+          <button id="ictNextQuestion" type="button">Next</button>
+        </div>
       </div>
     </section>
+    </form>
 
-    <section class="card">
-      <div class="section-title">Instructions</div>
-      <div class="instructions">
-        <strong>Part I:</strong> Choose the best answer. 35 items × 2 points = 70 points.<br>
-        <strong>Part II:</strong> Answer clearly using appropriate C# terminology and examples. 6 items × 5 points = 30 points.<br>
-        <strong>Total:</strong> 100 points.
-        <table class="grading-scale" aria-label="Personal grading scale">
-          <thead>
-            <tr><th>Score</th><th>Recording</th></tr>
-          </thead>
-          <tbody>
-            <tr><td>90 - 100</td><td>Will be recorded as 100 points</td></tr>
-            <tr><td>70 - 89</td><td>Actual score</td></tr>
-            <tr><td>69 &amp; below</td><td>Will be recorded as zero points</td></tr>
-          </tbody>
-        </table>
+    <!-- BSIT 3101 score and answer review dialog. -->
+    <section id="result" role="dialog" aria-modal="true" aria-labelledby="resultTitle">
+      <div class="result-dialog">
+        <button class="result-close" type="button" onclick="closeResult()" aria-label="Close examination result">Close</button>
+        <div id="resultTitle" class="section-title">Examination Result</div>
+        <div id="resultText"></div>
+        <div id="review" class="review"></div>
       </div>
     </section>
+  </div>
 
-    <section class="card">
-      <div class="section-title">Part I – Multiple Choice <span class="points">(35 items × 2 points = 70 points)</span></div>
-      <div id="mcqContainer"></div>
-    </section>
+  <div id="math-panel" class="tab-panel" role="tabpanel" aria-labelledby="tab-math" hidden>
+    <form id="mathExamForm">
+      <!-- Mathematics student information fields. -->
+      <section class="card">
+        <div class="section-title">Student Information</div>
+        <div class="meta">
+          <div><label for="mathName">Name</label><input id="mathName" type="text" placeholder="Enter your full name" required></div>
+          <div><label for="mathSection">Section</label><input id="mathSection" type="text" placeholder="Section" value="STEM - General Math" disabled></div>
+          <div><label for="mathDate">Date</label><input id="mathDate" type="date" required></div>
+        </div>
+      </section>
 
-    <section class="card">
-      <div class="section-title">Part II – Essay <span class="points">(6 items × 5 points = 30 points)</span></div>
-      <div id="essayContainer"></div>
-      <p class="warning"><strong>Note:</strong> Essay responses are not automatically graded. The instructor should evaluate Part II manually.</p>
-    </section>
+      <!-- Mathematics examination instructions and grading scale. -->
+      <section class="card">
+        <div class="section-title">Instructions</div>
+        <div class="instructions">
+          <strong>Multiple Choice:</strong> Choose the best answer. 10 items × 2 points = 20 points.<br>
+          <strong>Total:</strong> 20 points.
+          <table class="grading-scale" aria-label="Mathematics grading scale">
+            <thead>
+              <tr><th>Score</th><th>Recording</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>18 - 20</td><td>Excellent</td></tr>
+              <tr><td>14 - 17</td><td>Proficient</td></tr>
+              <tr><td>13 &amp; below</td><td>Needs review</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
 
-    <section class="card">
-      <div class="actions">
-        <button class="submit" type="submit">Submit Examination</button>
-        <button class="reset" type="button" onclick="resetExam()">Reset Answers</button>
+      <!-- Mathematics question launcher. Individual questions render in the modal below. -->
+      <section class="card">
+        <div class="section-title">Multiple Choice <span class="points">(10 items × 2 points = 20 points)</span></div>
+        <div class="question-launch">
+          <p>Answer each question in the examination window.</p>
+          <button id="openMathQuestions" class="open-questions" type="button">Open Questions</button>
+        </div>
+      </section>
+
+      <!-- Mathematics submission and reset actions. -->
+      <section class="card">
+        <div class="actions">
+          <button id="mathSubmitButton" class="submit" type="submit">Submit Examination</button>
+          <button class="reset" type="button" onclick="resetMathExam()">Reset Answers</button>
+        </div>
+      </section>
+
+    <!-- Mathematics one-question-at-a-time modal. -->
+    <section id="mathQuestionModal" class="question-modal" role="dialog" aria-modal="true" aria-labelledby="mathQuestionModalTitle">
+      <div class="question-dialog">
+        <div class="question-dialog-header">
+          <strong id="mathQuestionModalTitle">Mathematics Question</strong>
+          <span id="mathQuestionProgress" class="question-progress"></span>
+          <button class="question-close" type="button" data-close-question-modal="mathQuestionModal">Back to Exam</button>
+        </div>
+        <div id="mathMcqContainer"></div>
+        <div class="question-navigation">
+          <button id="mathPreviousQuestion" class="previous" type="button">Previous</button>
+          <button id="mathNextQuestion" type="button">Next</button>
+        </div>
       </div>
     </section>
-  </form>
+    </form>
 
-  <section id="result" role="dialog" aria-modal="true" aria-labelledby="resultTitle">
-    <div class="result-dialog">
-      <button class="result-close" type="button" onclick="closeResult()" aria-label="Close examination result">Close</button>
-      <div id="resultTitle" class="section-title">Examination Result</div>
-      <div id="resultText"></div>
-      <div id="review" class="review"></div>
-    </div>
-  </section>
+    <!-- Mathematics score and answer review dialog. -->
+    <section id="mathResult" role="dialog" aria-modal="true" aria-labelledby="mathResultTitle" style="display:none;position:fixed;inset:0;z-index:10;overflow-y:auto;margin:0;padding:28px 15px;background:rgba(0,43,92,.55)">
+      <div class="result-dialog">
+        <button class="result-close" type="button" onclick="closeResult('mathResult')" aria-label="Close mathematics result">Close</button>
+        <div id="mathResultTitle" class="section-title">Examination Result</div>
+        <div id="mathResultText"></div>
+        <div id="mathReview" class="review"></div>
+      </div>
+    </section>
+  </div>
 </main>
 
-<footer>3rd Year BSIT • C# Collections, Generics, Delegates and Events</footer>
+<!-- Site footer. -->
+<footer>BSIT 3101 Online Examination - Event Driven Programming</footer>
 
 <script>
+// BSIT 3101 question bank: Event Driven Programming, Exception Handling and Threads.
 const questions = [
-["A programmer wants to store a collection of student names where the number of students may increase or decrease while the program is running. Which collection is most appropriate based on the handout?",["Array","ArrayList","Stack","Queue"],"B"],
-["A program stores Student ID → Student Name and retrieves a student's name by specifying the ID. Which collection is most suitable?",["Stack","Queue","Hashtable","ArrayList"],"C"],
-["A programmer needs a collection that stores key-value pairs while keeping the keys sorted. Which collection should be considered?",["SortedList","Stack","Queue","ArrayList"],"A"],
-["Stack<string> actions contains Open, Edit, Save in that order using Push(). Which item is returned first by Pop()?",["Open","Edit","Save","All three items"],"C"],
-["A browser history feature needs to process the most recently added item first. Which collection behavior fits?",["FIFO","LIFO","Sorted access","Key-value access"],"B"],
-["A customer-service system processes customers in the order they arrive. Which collection best represents this behavior?",["Stack","Queue","Hashtable","SortedList"],"B"],
-["Queue<int> numbers contains 10, 20, 30 in that order. What does Peek() return?",["10","20","30","Nothing"],"A"],
-["Queue<int> numbers contains 10, 20, 30. After int x = numbers.Dequeue(); what is x?",["10","20","30","0"],"A"],
-["A developer wants a collection that stores integers and prevents accidentally adding a string into the same collection. Which is most appropriate?",["ArrayList","Hashtable","List ","List<objack>"],"C"],
-["Why are generic collections useful when developing applications?",["They eliminate variables.","They allow reusable code across different data types.","They automatically connect applications to databases.","They guarantee error-free programs."],"B"],
-["Which statement best describes List<T>?",["It is fixed-size.","It is dynamically allocated and can grow and shrink.","It only stores key-value pairs.","It always follows FIFO."],"B"],
-["List<string> names contains Anna, Ben, Carlo. Which accesses Ben?",["names[0]","names[1]","names[2]","names[\"Ben\"]"],"B"],
-["A list contains Anna, Ben, Carlo, Ben. After names.Remove(\"Ben\"), what happens?",["Both Ben entries are removed.","Only the first matching Ben is removed.","The entire list is removed.","Nothing is removed."],"B"],
-["A programmer wants to determine the position of Carlo in a List<string>. Which method is used?",["Sort()","Remove()","IndexOf()","ContainsValue()"],"C"],
-["If IndexOf() cannot find an element in a List<T>, what does it return?",["0","1","-1","null"],"C"],
-["A student wants to arrange the contents of a list into sorted order. Which method is used?",["Add()","Sort()","Remove()","IndexOf()"],"B"],
-["Which correctly compares Stack<T> and Queue<T>?",["Stack FIFO; Queue LIFO","Both FIFO","Stack LIFO; Queue FIFO","Both LIFO"],"C"],
-["Which operation adds an item to a Stack<T>?",["Enqueue","Dequeue","Push","Add"],"C"],
-["Which operation removes the item at the top of a Stack<T>?",["Pop","Peek","Push","Enqueue"],"A"],
-["What is the main difference between Peek() and Pop() on a stack?",["Peek removes; Pop adds.","Peek views without removing; Pop removes.","Both remove.","Both add."],"B"],
-["A developer wants a method reference that can point to another method when the signature matches. What C# feature should be used?",["Interface","Delegate","ArrayList","Hashtable"],"B"],
-["Which statement best describes a delegate?",["Stores only integers.","Encapsulates a method and holds a reference to a method.","Automatically creates a database connection.","Replaces every class."],"B"],
-["Given public delegate int MathOperation(int x, int y); which method could it reference?",["int Add(int x, int y)","void Add(int x, int y)","int Add(int x)","string Add(int x, int y)"],"A"],
-["Why must a referenced method have a matching signature?",["Delegate determines class name.","Delegate specifies expected return type and parameters.","Delegate changes parameters automatically.","Delegate only works with static methods."],"B"],
-["Which correctly creates a delegate referencing Formula.getSum?",["MathOperation op = new MathOperation(Formula.getSum);","MathOperation op = Formula.getSum();","MathOperation op = new Formula();","Formula op = MathOperation.getSum;"],"A"],
-["What is the main advantage of public delegate X DisplayOutput<X>(X arg)?",["Only integers.","It can reference methods using different data types while following the same pattern.","It removes methods.","It only references two-parameter methods."],"B"],
-["If X is double in DisplayOutput<double>, what method can it reference?",["A method returning double and receiving one double parameter","A method returning string and receiving one double parameter","A method returning double and receiving two int parameters","A void method with no parameters"],"A"],
-["Which best describes an event in C#?",["A collection that stores objects.","A class member fired when a specific action occurs.","Always a database operation.","A special array."],"B"],
-["A button click automatically runs a registered method. What concept is demonstrated?",["Event handling","Array indexing","Generic collection","Sorting"],"A"],
-["What is the role of an event handler?",["Stores objects.","The method invoked when an event occurs.","Creates a generic type.","Sorts an ArrayList."],"B"],
-["Before declaring an event, what should be declared first according to the handout?",["A queue","A delegate","An ArrayList","A constructor"],"B"],
-["An event uses a delegate that accepts two parameters. What should a registered method generally have?",["No parameters","One parameter","Two matching parameters","Three parameters"],"C"],
-["What is the purpose of eventName += delegateInstance;?",["Removes a subscription.","Registers/adds a delegate to the event.","Creates a class.","Sorts subscribers."],"B"],
-["Which accessors are involved in registering and unregistering event subscriptions?",["get and set","push and pop","add and remove","enqueue and dequeue"],"C"],
-["A programmer needs a mechanism that can reference methods from different classes as long as their signatures match. Which is the better fit?",["Delegate","ArrayList","Queue","SortedList"],"A"]
+["Which namespace contains the C# Thread class?",["System.IO","System.Threading","System.Tasks","System.Runtime"],"B","The Thread class is defined in the System.Threading namespace."],
+["What is the superclass for all standard C# exceptions?",["SystemException","Error","System.Exception","ApplicationException"],"C","System.Exception is the base class for standard C# exceptions."],
+["Which exceptions are generated specifically by the CLR?",["ApplicationException","SystemException","UserException","CustomException"],"B","The CLR generates exceptions derived from SystemException."],
+["What type of exceptions are generated by user programs?",["SystemException","HardwareException","ApplicationException","ThreadException"],"C","ApplicationException is intended for exceptions generated by user programs."],
+["Which exception is thrown when array indexing is out of bounds?",["OutOfRangeException","IndexOutOfRangeException","ArgumentException","OverflowException"],"B","IndexOutOfRangeException is thrown for an invalid array index."],
+["Which exception occurs when memory allocation fails due to low RAM?",["StackOverflowException","OutOfMemoryException","MemoryBufferException","SystemException"],"B","OutOfMemoryException indicates that an allocation failed."],
+["What exception is raised when the execution stack has too many pending calls?",["StackOverflowException","OverflowException","OutOfMemoryException","RecursionException"],"A","StackOverflowException occurs when the execution stack is exhausted."],
+["Which exception is thrown when string formatting is invalid?",["ArgumentException","FormatException","ConvertException","StringException"],"B","FormatException indicates an invalid format."],
+["Which keyword is used to test a code block for potential exceptions?",["test","catch","try","check"],"C","The try keyword encloses code that may throw an exception."],
+["Which keyword handles an exception when thrown from a try block?",["catch","handle","throw","finally"],"A","A catch block handles an exception from a try block."],
+["Which keyword is used to manually trigger an exception object?",["raise","throw","dispatch","error"],"B","The throw keyword manually raises an exception."],
+["Which block ALWAYS executes regardless of whether an exception occurs?",["catch","end","default","finally"],"D","The finally block runs whether or not an exception occurs."],
+["Which statement is FORBIDDEN inside a finally block?",["Console.WriteLine","goto","int x = 0;","if conditions"],"B","A goto statement cannot transfer control out of a finally block."],
+["What operator creates a new exception object instance for throw?",["new","instance","create","init"],"A","The new operator creates an exception object."],
+["What happens if an exception is thrown without a try-catch handler?",["Code continues","Ignored","App terminates","Re-executed"],"C","An unhandled exception terminates the application."],
+["To make a custom exception, a class must inherit from which base class?",["Object","CustomError","Exception","Application"],"C","Custom exceptions inherit from System.Exception."],
+["Which base constructor is called in custom exceptions to pass a message?",["base(message)","super(message)","this(message)","parent(message)"],"A","The base(message) constructor passes the message to the base exception."],
+["What is an independent execution unit in a process called?",["Task","Thread","AppDomain","Class"],"B","A thread is an independent execution unit within a process."],
+["What is the very first thread executed in a C# application process?",["Child Thread","Main Thread","Primary Delegate","System Thread"],"B","The main thread is the first thread executed by the application."],
+["Threads within the same process share which of the following?",["Memory space","Separate OS IDs","Independent stacks only","Nothing"],"A","Threads in one process share the process memory space."],
+["What delegate is used to initialize a thread with a callback method?",["Action","ThreadStart","ThreadCallback","EventHandler"],"B","ThreadStart represents the callback used to initialize a Thread."],
+["Initial state of a newly created Thread object before Start() call?",["Ready","Unstarted","Running","Blocked"],"B","A new Thread remains in the Unstarted state until Start() is called."],
+["Calling thread.Start() transitions a thread from Unstarted to which state?",["Started / Ready","Running","Blocked","Terminated"],"A","Start changes the thread to the Started or Ready state."],
+["What state does the highest priority Started thread move into next?",["Stopped","WaitSleepJoin","Running","Suspended"],"C","The scheduler gives the highest-priority ready thread the Running state."],
+["Which method forces a running thread directly to termination?",["Stop()","Abort()","End()","Kill()"],"B","Abort() requests that a running thread terminate."],
+["Which exception is automatically raised inside a thread when Abort() is called?",["ThreadAbortException","ThreadStopException","AbortRequestedException","SystemException"],"A","Abort() raises ThreadAbortException in the target thread."],
+["What happens to ThreadAbortException at the end of a catch block?",["Handled fully","Auto rethrown","Ignored","Cleared"],"B","ThreadAbortException is automatically rethrown at the end of a catch block."],
+["What state does a thread enter when waiting for an I/O operation?",["Blocked","WaitSleepJoin","Unstarted","Stopped"],"A","A thread waiting for I/O enters the Blocked state."],
+["Is CPU time allocated to a thread while it is in the Blocked state?",["Yes, full allocation","No","Partial allocation","Shared allocation"],"B","Blocked threads do not receive CPU time."],
+["When an I/O operation completes, what state does a Blocked thread return to?",["Running","Started","Stopped","WaitSleepJoin"],"B","After I/O completes, the thread returns to Started or Ready."],
+["Sleep() or Monitor.Wait() moves a thread into which state?",["Blocked","WaitSleepJoin","Stopped","Suspended"],"B","Sleep and Monitor.Wait place a thread in WaitSleepJoin."],
+["Which Monitor method wakes up ONE waiting thread back to Started state?",["Pulse()","PulseAll()","Wake()","Resume()"],"A","Monitor.Pulse wakes one waiting thread."],
+["Which Monitor method wakes up ALL waiting threads back to Started state?",["SignalAll()","PulseAll()","WakeAll()","ResumeAll()"],"B","Monitor.PulseAll wakes all waiting threads."],
+["Method used to interrupt a thread currently in WaitSleepJoin state?",["Abort()","Interrupt()","Break()","Resume()"],"B","Interrupt() wakes a thread from WaitSleepJoin by raising ThreadInterruptedException."],
+["Method that stops the calling thread until another thread terminates?",["Join()","Wait()","Merge()","Pause()"],"A","Join() blocks the calling thread until the target thread ends."],
+["Property that returns the currently executing thread instance?",["Thread.Current","Thread.CurrentThread","Thread.Active","Thread.Main"],"B","Thread.CurrentThread returns the currently executing thread."],
+["Property returning a boolean indicator of thread execution status?",["IsRunning","IsAlive","IsActive","Status"],"B","IsAlive indicates whether a thread has started and has not terminated."],
+["Property used to get or set whether a thread is a background thread?",["Background","IsBackground","IsDaemon","ThreadType"],"B","IsBackground gets or sets the background-thread flag."],
+["Static method used to pause thread execution for a set time in ms?",["Thread.Pause()","Thread.Sleep()","Thread.Wait()","Thread.Delay()"],"B","Thread.Sleep pauses execution for the specified milliseconds."],
+["Static method used to cancel an active abort request on a thread?",["ResetAbort()","CancelAbort()","UndoAbort()","ClearAbort()"],"A","Thread.ResetAbort cancels a pending abort request."],
+["How does CPU schedule multiple threads in C# multithreading?",["Randomly","Time slice (Round-robin)","LIFO order","FIFO order"],"B","The scheduler allocates CPU time in time slices."],
+["What occurs when multiple threads access/modify a shared resource concurrently?",["Deadlock","Race condition","Starvation","Interlock"],"B","Unsynchronized concurrent access can cause a race condition."],
+["Time parameter unit passed inside Thread.Sleep(3000)?",["Seconds","Milliseconds","Microseconds","Ticks"],"B","Thread.Sleep uses milliseconds."],
+["Property used to retrieve string-based thread state flags?",["State","ThreadState","Condition","ExecutionState"],"B","ThreadState exposes the thread's state flags."],
+["Exception thrown when dividing an integer by zero?",["ArithmeticException","DivideByZeroException","ZeroException","OverflowException"],"B","Integer division by zero throws DivideByZeroException."],
+["Can a single try block have multiple catch blocks?",["Yes","No","Max 2 only","Only with finally"],"A","A try block may have multiple catch blocks for different exception types."],
+["Standard property to read exception descriptive text?",["Text","Message","Description","Details"],"B","The Message property contains descriptive exception text."],
+["Exception thrown during arithmetic operation overflow in checked context?",["OverflowException","BoundsException","MaxLimitException","StackOverflowException"],"A","Checked arithmetic overflow throws OverflowException."],
+["Priority property assigns thread scheduling priority via which enum?",["ThreadPriority","PriorityLevel","SchedulingLevel","ProcessPriority"],"A","The Priority property uses the ThreadPriority enum."],
+["A running thread enters Stopped state when its task is completed or by:",["Calling Sleep()","Calling Abort()","Calling Join()","Calling Wait()"],"B","Abort() can terminate a running thread."],
+];// Mathematics question bank.
+const mathQuestions = [
+  ["What is the value of 12 + 8 × 3?",["36","60","28","24"],"B","Multiplication comes before addition, so 8 × 3 = 24 and 12 + 24 = 36."],
+  ["Find the remainder when 49 is divided by 6.",["1","3","4","5"],"C","49 ÷ 6 = 8 remainder 1."],
+  ["What is 25% of 240?",["40","50","60","80"],"C","25% of 240 is 0.25 × 240 = 60."],
+  ["Solve for x: 3x - 9 = 12.",["x = 3","x = 5","x = 7","x = 9"],"C","Add 9 to both sides: 3x = 21, then divide by 3."],
+  ["Which fraction is equivalent to 0.75?",["1/2","2/3","3/4","4/5"],"C","0.75 = 75/100 = 3/4."],
+  ["A triangle has angles 45°, 65°, and x°. What is x?",["60°","70°","80°","90°"],"B","The sum of triangle angles is 180°, so x = 180 - 45 - 65 = 70."],
+  ["What is the product of 7 and 9?",["56","63","72","81"],"B","7 × 9 = 63."],
+  ["Which number is the greatest common factor of 24 and 36?",["6","8","12","18"],"C","12 is the greatest common factor of 24 and 36."],
+  ["If a = 5 and b = 2, what is a² - b²?",["17","21","29","31"],"C","25 - 4 = 21."],
+  ["What is the perimeter of a square with side length 6 cm?",["12 cm","18 cm","24 cm","36 cm"],"C","Perimeter = 4 × 6 = 24 cm."]
 ];
 
-const essays = [
-["Collections in a Real-World System","Imagine that you are developing a school enrollment system. Explain which collection you would use for: a list of students, student ID and student name pairs, students waiting to be processed, and a collection where the most recently added item should be processed first. Explain why you selected each collection."],
-["List<T> vs. Array","Explain the difference between a traditional array and List<T> in terms of size and flexibility. Give one practical situation where List<T> would be more convenient than an array."],
-["Stack vs. Queue","Explain the difference between LIFO and FIFO. Give one real-world example for each and explain why the behavior of the collection fits the example."],
-["Understanding Delegates","In your own words, explain what a delegate is and why a programmer would use one instead of directly calling a method. Include a simple programming scenario where a delegate would be useful."],
-["Events and Event Handlers","Explain the relationship among a delegate, event, and event handler in C#. Describe what happens when an event occurs and a method has been registered to respond to it."],
-["Generics and Reusability","Explain why generics are useful in C#. Using List<T>, Queue<T>, or Stack<T> as an example, describe how generics make code more reusable and allow the programmer to work with different data types."]
-];
+// Escape question text before inserting it into the page.
+function escapeHTML(value){
+  return String(value).replace(/[&<>"']/g,character=>(
+    {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[character])
+  );
+}
 
+// Identify the broad device category without collecting a unique device fingerprint.
+function detectDevice(){
+  const userAgent=navigator.userAgent||"";
+  if(/iPhone/i.test(userAgent)) return "iPhone";
+  if(/iPad/i.test(userAgent)||(/Macintosh/i.test(userAgent)&&navigator.maxTouchPoints>1)) return "iPad";
+  if(/Android/i.test(userAgent)) return "Android";
+  if(/Windows/i.test(userAgent)) return "Windows";
+  if(/Macintosh|Mac OS X/i.test(userAgent)) return "Mac";
+  if(/Linux/i.test(userAgent)) return "Linux";
+  return "Unknown";
+}
+
+const device=detectDevice();
+
+// Save a completed examination and return a user-facing status message.
+async function saveExamSubmission(submission){
+  if(SUPABASE_KEY==="******"){
+    const message="The examination was graded, but it was not saved because the Supabase anon key is not configured.";
+    console.error(message);
+    return message;
+  }
+  try{
+    const { error }=await supabaseClient
+      .from("exam_submissions")
+      .insert(submission);
+    if(error){
+      console.error("Could not save exam result:",error);
+      return `The examination was graded, but it could not be saved (${error.message}).`;
+    }
+    return "";
+  }catch(error){
+    console.error("Could not save exam result:",error);
+    return "The examination was graded, but it could not be saved because the database request failed.";
+  }
+}
+
+// Render ICT questions and their answer choices.
 function renderMCQ(){
   const c=document.getElementById("mcqContainer");
   c.innerHTML=questions.map((q,i)=>{
     const n=i+1;
-    return `<div class="question">
-      <div class="qtext">${n}. ${q[0]}</div>
+    return `<div class="question" data-question-index="${i}"${i===0?"":" hidden"}>
+      <div class="qtext">${n}. ${escapeHTML(q[0])}</div>
       ${q[1].map((opt,j)=>{
         const letter=String.fromCharCode(65+j);
-        return `<label class="option"><input type="radio" name="q${n}" value="${letter}"> <strong>${letter}.</strong> ${opt}</label>`;
+        return `<label class="option"><input type="radio" name="q${n}" value="${letter}"${j===0?" required":""}> <strong>${letter}.</strong> ${escapeHTML(opt)}</label>`;
       }).join("")}
     </div>`;
   }).join("");
 }
-function renderEssays(){
-  const c=document.getElementById("essayContainer");
-  c.innerHTML=essays.map((e,i)=>`<div class="question essay">
-    <div class="qtext">${i+36}. ${e[0]} <span class="points">(5 points)</span></div>
-    <div>${e[1]}</div>
-    <textarea name="essay${i}" placeholder="Type your answer here..."></textarea>
-  </div>`).join("");
+// Render Mathematics questions and their answer choices.
+function renderMathQuestions(){
+  const c=document.getElementById("mathMcqContainer");
+  c.innerHTML=mathQuestions.map((q,i)=>{
+    const n=i+1;
+    return `<div class="question" data-question-index="${i}"${i===0?"":" hidden"}>
+      <div class="qtext">${n}. ${escapeHTML(q[0])}</div>
+      ${q[1].map((opt,j)=>{
+        const letter=String.fromCharCode(65+j);
+        return `<label class="option"><input type="radio" name="m${n}" value="${letter}"${j===0?" required":""}> <strong>${letter}.</strong> ${escapeHTML(opt)}</label>`;
+      }).join("")}
+    </div>`;
+  }).join("");
 }
+// Randomize the ICT question order for each examination session.
 function shuffleQuestions(){
   for(let i=questions.length-1;i>0;i--){
     const j=Math.floor(Math.random()*(i+1));
     [questions[i],questions[j]]=[questions[j],questions[i]];
   }
 }
+// Track the active question and controls for each subject modal.
+const questionModalState={
+  ict:{modalId:"ictQuestionModal",containerId:"mcqContainer",progressId:"ictQuestionProgress",previousId:"ictPreviousQuestion",nextId:"ictNextQuestion",openId:"openIctQuestions",total:()=>questions.length,index:0},
+  math:{modalId:"mathQuestionModal",containerId:"mathMcqContainer",progressId:"mathQuestionProgress",previousId:"mathPreviousQuestion",nextId:"mathNextQuestion",openId:"openMathQuestions",total:()=>mathQuestions.length,index:0}
+};
+// Display the current question and update navigation controls.
+function updateQuestionModal(subject){
+  const state=questionModalState[subject];
+  const container=document.getElementById(state.containerId);
+  const questionElements=container.querySelectorAll(".question");
+  questionElements.forEach((question,index)=>{question.hidden=index!==state.index;});
+  document.getElementById(state.progressId).textContent=`Question ${state.index+1} of ${state.total()}`;
+  document.getElementById(state.previousId).disabled=state.index===0;
+  document.getElementById(state.nextId).textContent=state.index===state.total()-1?"Finish Questions":"Next";
+  const currentQuestion=questionElements[state.index];
+  if(currentQuestion){
+    const firstInput=currentQuestion.querySelector("input");
+    if(firstInput) firstInput.focus();
+  }
+}
+// Open a subject's question modal.
+function openQuestionModal(subject){
+  const state=questionModalState[subject];
+  document.getElementById(state.modalId).classList.add("open");
+  document.body.style.overflow="hidden";
+  updateQuestionModal(subject);
+}
+// Close a subject's question modal and restore focus to its launcher.
+function closeQuestionModal(subject){
+  const state=questionModalState[subject];
+  document.getElementById(state.modalId).classList.remove("open");
+  document.body.style.overflow="";
+  document.getElementById(state.openId).focus();
+}
+// Move forward or backward through questions after validating forward navigation.
+function moveQuestion(subject,direction){
+  const state=questionModalState[subject];
+  const currentName=subject==="ict"?`q${state.index+1}`:`m${state.index+1}`;
+  if(direction>0&&!document.querySelector(`input[name="${currentName}"]:checked`)){
+    alert("Please select an answer before continuing.");
+    return;
+  }
+  const nextIndex=state.index+direction;
+  if(nextIndex<0||nextIndex>=state.total()){
+    closeQuestionModal(subject);
+    return;
+  }
+  state.index=nextIndex;
+  updateQuestionModal(subject);
+}
+Object.entries(questionModalState).forEach(([subject,state])=>{
+  document.getElementById(state.openId).addEventListener("click",()=>openQuestionModal(subject));
+  document.getElementById(state.previousId).addEventListener("click",()=>moveQuestion(subject,-1));
+  document.getElementById(state.nextId).addEventListener("click",()=>moveQuestion(subject,1));
+});
+document.querySelectorAll("[data-close-question-modal]").forEach(button=>{
+  button.addEventListener("click",()=>closeQuestionModal(button.dataset.closeQuestionModal==="ictQuestionModal"?"ict":"math"));
+});
+// Grade the BSIT 3101 examination and save the result to Supabase.
 async function grade(){
   document.getElementById("submissionLoading").style.display="grid";
   document.body.style.overflow="hidden";
@@ -329,49 +635,130 @@ async function grade(){
     }
   });
   const points=correct*2;
-  const essayAnswered=essays.filter((_,i)=>document.querySelector(`[name="essay${i}"]`).value.trim()).length;
-  const { error } = await supabaseClient
-  .from("exam_submissions")
-  .insert({
+  const saveMessage=await saveExamSubmission({
     student_name: document.getElementById("name").value.trim(),
     section: document.getElementById("section").value.trim(),
     exam_date: document.getElementById("date").value,
     mcq_score: points,
-    essay_answered: essayAnswered
+    essay_answered: 0,
+    device
   });
-
-if (error) {
-  console.error("Could not save exam result:", error);
+if (!saveMessage) {
+  const submitButton=document.getElementById("submitButton");
+  submitButton.type="button";
+  submitButton.textContent="Retake Examination";
+  submitButton.onclick=retakeExam;
 }
   document.getElementById("submissionLoading").style.display="none";
   document.getElementById("result").style.display="block";
   document.getElementById("resultText").innerHTML=
-    `<div class="score">Part I: ${points} / 70</div>
-     <p><strong>Multiple-choice:</strong> ${correct} correct out of 35. ${answered} item(s) answered.</p>
-     <p><strong>Part II:</strong> ${essayAnswered} of 6 essay response(s) entered. These require instructor grading (5 points each).</p>
-     <p class="success">The final 100-point score should include the instructor's manually graded essay points.</p>`;
+    `<div class="score">${points} / ${questions.length*2}</div>
+     <p><strong>Multiple-choice:</strong> ${correct} correct out of ${questions.length}. ${answered} item(s) answered.</p>
+     <p class="success">Your score is based on ${questions.length} multiple-choice items worth 2 points each.</p>
+     ${saveMessage?`<p class="warning"><strong>Save status:</strong> ${saveMessage}</p>`:"<p class=\"success\"><strong>Save status:</strong> Result saved successfully.</p>"}`;
   document.getElementById("review").innerHTML = review.length
-    ? `<h3>Items to Review</h3>${review.map(x=>`<div class="wrong">Item ${x.n}: your answer <strong>${x.selected}</strong> • correct answer <strong>${x.correct}</strong></div>`).join("")}`
-    : `<div class="correct">Excellent! All answered Part I items are correct.</div>`;
+    ? `<h3>Items to Review</h3>${review.map(x=>`<div class="wrong">Item ${x.n}: your answer <strong>${x.selected}</strong> • correct answer <strong>${x.correct}</strong><br>${questions[x.n-1][3]}</div>`).join("")}`
+    : `<div class="correct">Excellent! All answered items are correct.</div>`;
   document.querySelector(".result-close").focus();
 }
+// Grade the Mathematics examination.
+async function gradeMath(){
+  let correct=0, answered=0, review=[];
+  const form=document.getElementById("mathExamForm");
+  mathQuestions.forEach((q,i)=>{
+    const selected=form.querySelector(`input[name="m${i+1}"]:checked`);
+    form.querySelectorAll(`input[name="m${i+1}"]`).forEach(input=>{
+      const option=input.closest(".option");
+      option.classList.toggle("answer-correct",input.value===q[2]);
+      option.classList.toggle("answer-wrong",Boolean(selected)&&input===selected&&input.value!==q[2]);
+    });
+    if(selected){
+      answered++;
+      if(selected.value===q[2]) correct++;
+      else review.push({n:i+1,selected:selected.value,correct:q[2]});
+    }
+  });
+  const points=correct*2;
+  const saveMessage=await saveExamSubmission({
+    student_name: document.getElementById("mathName").value.trim(),
+    section: document.getElementById("mathSection").value.trim(),
+    exam_date: document.getElementById("mathDate").value,
+    mcq_score: points,
+    essay_answered: 0,
+    device
+  });
+  const result=document.getElementById("mathResult");
+  const resultText=document.getElementById("mathResultText");
+  const reviewBox=document.getElementById("mathReview");
+  result.style.display="block";
+  resultText.innerHTML=`<div class="score">${points} / 20</div>
+    <p><strong>Multiple-choice:</strong> ${correct} correct out of 10. ${answered} item(s) answered.</p>
+    <p class="success">Your score is based on 10 multiple-choice items worth 2 points each.</p>`;
+  if(saveMessage){
+    resultText.innerHTML+=`<p class="warning"><strong>Save status:</strong> ${escapeHTML(saveMessage)}</p>`;
+  }else{
+    resultText.innerHTML+=`<p class="success"><strong>Save status:</strong> Result saved successfully.</p>`;
+  }
+  reviewBox.innerHTML = review.length
+    ? `<h3>Items to Review</h3>${review.map(x=>`<div class="wrong">Item ${x.n}: your answer <strong>${x.selected}</strong> • correct answer <strong>${x.correct}</strong><br>${mathQuestions[x.n-1][3]}</div>`).join("")}`
+    : `<div class="correct">Excellent! All answered items are correct.</div>`;
+  result.querySelector(".result-close").focus();
+}
+// Connect form submissions to their grading functions.
 document.getElementById("examForm").addEventListener("submit",e=>{e.preventDefault();grade();});
-function closeResult(){
-  document.getElementById("result").style.display="none";
+document.getElementById("mathExamForm").addEventListener("submit",e=>{e.preventDefault();gradeMath();});
+// Close a result dialog.
+function closeResult(targetId="result"){
+  document.getElementById(targetId).style.display="none";
   document.body.style.overflow="";
 }
+// Reset ICT answers and question position.
 function resetExam(){
   if(confirm("Reset all answers?")){
     document.getElementById("examForm").reset();
+    questionModalState.ict.index=0;
     closeResult();
     window.scrollTo({top:0,behavior:"smooth"});
   }
 }
+// Reset Mathematics answers and question position.
+function resetMathExam(){
+  if(confirm("Reset all answers?")){
+    document.getElementById("mathExamForm").reset();
+    questionModalState.math.index=0;
+    closeResult("mathResult");
+    window.scrollTo({top:0,behavior:"smooth"});
+  }
+}
+// Reload the page for a new examination attempt.
+function retakeExam(){
+  window.location.reload();
+}
+// Switch between subject panels.
+function switchTab(tabName){
+  const tabs=document.querySelectorAll(".tab-button");
+  const panels=document.querySelectorAll(".tab-panel");
+  tabs.forEach(button=>{
+    const isActive=button.dataset.tab===tabName;
+    button.classList.toggle("active",isActive);
+    button.setAttribute("aria-selected",String(isActive));
+  });
+  panels.forEach(panel=>{
+    const isActive=panel.id===`${tabName}-panel`;
+    panel.classList.toggle("active",isActive);
+    panel.hidden=!isActive;
+  });
+}
+document.querySelectorAll(".tab-button").forEach(button=>{
+  button.addEventListener("click",()=>switchTab(button.dataset.tab));
+});
+// Prepare question data and reveal the welcome dialog.
 function prepareExam(){
   shuffleQuestions();
   renderMCQ();
-  renderEssays();
+  renderMathQuestions();
   document.getElementById("date").valueAsDate=new Date();
+  document.getElementById("mathDate").valueAsDate=new Date();
   document.getElementById("loadingMessage").textContent="Your questions are ready. Good luck!";
   const startButton=document.getElementById("startExam");
   startButton.disabled=false;
@@ -382,12 +769,77 @@ function prepareExam(){
     startButton.focus();
   },800);
 }
-function startExam(){
+// Request fullscreen where the device supports and requires it.
+async function enterFullscreen(){
+  if(isIPhone()){
+    return;
+  }
+  if(!document.fullscreenElement){
+    await document.documentElement.requestFullscreen();
+  }
+}
+// iPhone browsers commonly do not support the required fullscreen API.
+function isIPhone(){
+  return /iPhone|iPod/i.test(navigator.userAgent);
+}
+let examStarted=false;
+let pageLeaveRefreshStarted=false;
+// Restart the page after the user leaves the examination.
+function refreshAfterPageLeave(){
+  if(examStarted&&!pageLeaveRefreshStarted){
+    pageLeaveRefreshStarted=true;
+    window.location.reload();
+  }
+}
+// Pause the interface when the examination page loses focus.
+function pauseForPageLeave(){
+  if(examStarted&&(document.hidden||!document.hasFocus())){
+    document.getElementById("pageLeaveScreen").style.display="grid";
+    document.body.style.overflow="hidden";
+  }
+}
+// Resume the interface after the user returns to the examination.
+function resumeAfterPageReturn(){
+  if(examStarted&&document.visibilityState==="visible"&&document.hasFocus()&&(isIPhone()||document.fullscreenElement)){
+    document.getElementById("pageLeaveScreen").style.display="none";
+    document.body.style.overflow="";
+  }
+}
+// Start the examination after fullscreen requirements are satisfied.
+async function startExam(){
+  try{
+    await enterFullscreen();
+  }catch(error){
+    console.error("Fullscreen is required to start the examination:",error);
+    document.getElementById("loadingMessage").textContent="Fullscreen permission is required to start the examination.";
+    return;
+  }
   document.getElementById("welcomeScreen").style.display="none";
+  document.getElementById("fullscreenScreen").style.display="none";
   document.body.style.overflow="";
+  examStarted=true;
   document.getElementById("name").focus();
 }
+// Register start, fullscreen, focus, and visibility event handlers.
 document.getElementById("startExam").addEventListener("click",startExam);
+document.getElementById("returnFullscreen").addEventListener("click",startExam);
+document.getElementById("returnPage").addEventListener("click",startExam);
+document.addEventListener("contextmenu",event=>event.preventDefault());
+document.addEventListener("fullscreenchange",()=>{
+  if(examStarted&&!isIPhone()&&!document.fullscreenElement){
+    document.getElementById("fullscreenScreen").style.display="grid";
+    document.body.style.overflow="hidden";
+    document.getElementById("returnFullscreen").focus();
+  }
+  resumeAfterPageReturn();
+});
+document.addEventListener("visibilitychange",pauseForPageLeave);
+window.addEventListener("blur",pauseForPageLeave);
+window.addEventListener("focus",resumeAfterPageReturn);
+document.addEventListener("visibilitychange",()=>{
+  if(document.hidden) refreshAfterPageLeave();
+});
+window.addEventListener("blur",refreshAfterPageLeave);
 document.body.style.overflow="hidden";
 window.addEventListener("load",prepareExam,{once:true});
 </script>
